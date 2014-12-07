@@ -1119,7 +1119,7 @@ window['wordfenceAdmin'] = {
 			jQuery('#wfrawhtml').html('<span style="color: #F00;">Sorry, but no data for that IP or domain was found.</span>');
 		}
 	},
-	blockIPUARange: function(ipRange, uaRange, reason){
+	blockIPUARange: function(ipRange, uaRange, referer, reason){
 		if(! /\w+/.test(reason)){
 			this.colorbox('300px', "Please specify a reason", "You forgot to include a reason you're blocking this IP range. We ask you to include this for your own record keeping.");
 			return;
@@ -1131,7 +1131,7 @@ window['wordfenceAdmin'] = {
 				return;
 			}
 		}
-		if( ! (/\w+/.test(ipRange) || /\w+/.test(uaRange))){
+		if( ! (/\w+/.test(ipRange) || /\w+/.test(uaRange) || /\w+/.test(referer)) ){
 			this.colorbox('300px', 'Specify an IP range or Browser pattern', "Please specify either an IP address range or a web browser pattern to match.");
 			return;
 		}
@@ -1139,6 +1139,7 @@ window['wordfenceAdmin'] = {
 		this.ajax('wordfence_blockIPUARange', {
 			ipRange: ipRange,
 			uaRange: uaRange,
+			referer: referer,
 			reason: reason
 			}, function(res){
 				if(res.ok){
@@ -1619,6 +1620,30 @@ window['wordfenceAdmin'] = {
 			}
 
 			});
+	},
+	exportSettings: function(){
+		var self = this;
+		this.ajax('wordfence_exportSettings', {}, function(res){
+			if(res.ok && res.token){
+				self.colorbox('400px', "Export Successful", "We successfully exported your site settings. To import your site settings on another site, copy and paste the token below into the import text box on the destination site. Keep this token secret. It is like a password. If anyone else discovers the token it will allow them to import your settings excluding your API key.<br /><br />Token:<input type=\"text\" size=\"20\" value=\"" + res.token + "\" onclick=\"this.select();\" /><br />");
+			} else if(res.err){
+				self.colorbox('400px', "Error during Export", res.err);
+			} else {
+				self.colorbox('400px', "An unknown error occurred", "An unknown error occurred during the export. We received an undefined error from your web server.");
+			}
+		});
+	},
+	importSettings: function(token){
+		var self = this;
+		this.ajax('wordfence_importSettings', { token: token }, function(res){
+			if(res.ok){
+				self.colorbox('400px', "Import Successful", "You successfully imported " + res.totalSet + " options. Your import is complete. Please reload this page or click the button below to reload it:<br /><br /><input type=\"button\" value=\"Reload Page\" onclick=\"window.location.reload(true);\" />");
+			} else if(res.err){
+				self.colorbox('400px', "Error during Import", res.err);
+			} else {
+				self.colorbox('400px', "Error during Export", "An unknown error occurred during the import");
+			}
+		});
 	}
 };
 window['WFAD'] = window['wordfenceAdmin'];

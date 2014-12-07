@@ -1845,12 +1845,16 @@ class wordfence {
 	public static function ajax_blockIPUARange_callback(){
 		$ipRange = trim($_POST['ipRange']);
 		$uaRange = trim($_POST['uaRange']);
+		$referer = trim($_POST['referer']);
 		$reason = trim($_POST['reason']);
-		if(preg_match('/\|+/', $ipRange . $uaRange)){
-			return array('err' => 1, 'errorMsg' => "You are not allowed to include a pipe character \"|\" in your IP range or browser pattern");
+		if(preg_match('/\|+/', $ipRange . $uaRange . $referer)){
+			return array('err' => 1, 'errorMsg' => "You are not allowed to include a pipe character \"|\" in your IP range, browser pattern or referer");
 		}
 		if( (! $ipRange) && wfUtils::isUABlocked($uaRange)){
 			return array('err' => 1, 'errorMsg' => "The browser pattern you specified will block you from your own website. We have not accepted this pattern to protect you from being blocked.");
+		}
+		if(fnmatch($referer, site_url(), FNM_CASEFOLD)){
+			return array('err' => 1, 'errorMsg' => "The referer pattern you specified matches your own website and will block visitors as they surf from one page to another on your site. You can't enter this pattern.");
 		}
 		if($ipRange && (! preg_match('/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\-\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/', $ipRange ))){
 			return array('err' => 1, 'errorMsg' => "The IP range you specified is not valid. Please specify an IP range like the following example: \"1.2.3.4 - 1.2.3.8\" without quotes.");
@@ -1868,7 +1872,7 @@ class wordfence {
 			}
 			$ipRange = $ip1 . '-' . $ip2;
 		}
-		$range = $ipRange . '|' . $uaRange;
+		$range = $ipRange . '|' . $uaRange . '|' . $referer;
 		self::getLog()->blockRange('IU', $range, $reason);
 		return array('ok' => 1);
 	}
@@ -2180,6 +2184,67 @@ class wordfence {
 			return array("ok" => 1);
 		}
 	}
+	public static function ajax_exportSettings_callback(){
+		$keys = wfConfig::getExportableOptionsKeys();
+		$export = array();
+		foreach($keys as $key){
+			$export[$key] = wfConfig::get($key, '');
+		}
+		$export['scanScheduleJSON'] = json_encode(wfConfig::get_ser('scanSched', array()));
+		$export['schedMode'] = wfConfig::get('schedMode', '');
+
+		try {
+			$api = new wfAPI(wfConfig::get('apiKey'), wfUtils::getWPVersion());
+			$res = $api->call('export_options', array(), $export);
+			if($res['ok'] && $res['token']){
+				return array(
+					'ok' => 1,
+					'token' => $res['token'],
+					);
+			} else {
+				throw new Exception("Invalid response: " . var_export($res, true));
+			}
+		} catch(Exception $e){
+			return array('err' => "An error occurred: " . $e->getMessage());	
+		}
+	}
+	public static function importSettings($token){
+		$api = new wfAPI(wfConfig::get('apiKey'), wfUtils::getWPVersion());
+		$res = $api->call('import_options', array(), array('token' => $token));
+		$totalSet = 0;
+		if($res['ok'] && $res['options']){
+			$keys = wfConfig::getExportableOptionsKeys();
+			foreach($keys as $key){
+				if(isset($res['options'][$key])){
+					wfConfig::set($key, $res['options'][$key]);
+					$totalSet++;
+				}
+			}
+			if(isset($res['options']['scanScheduleJSON']) && isset($res['options']['schedMode'])){
+				$scanSched = json_decode($res['options']['scanScheduleJSON']);
+				wfConfig::set_ser('scanSched', $scanSched);
+				wfConfig::set('schedMode', $res['options']['schedMode']);
+				$totalSet += 2;
+			}
+			return $totalSet;
+		} else if($res['err']){
+			throw new Exception($res['err']);
+		} else {
+			throw new Exception("Invalid response from Wordfence servers during import.");
+		}
+	}	
+	public static function ajax_importSettings_callback(){
+		$token = $_POST['token'];
+		try {
+			$totalSet = self::importSettings($token);
+			return array(
+				'ok' => 1,
+				'totalSet' => $totalSet,
+				);
+		} catch(Exception $e){
+			return array('err' => "An error occurred: " . $e->getMessage());
+		}
+	}
 	public static function startScan(){
 		wfScanEngine::startScan();
 	}
@@ -2442,7 +2507,7 @@ EOL;
 	}
 	public static function admin_init(){
 		if(! wfUtils::isAdmin()){ return; }
-		foreach(array('activate', 'scan', 'updateAlertEmail', 'sendActivityLog', 'restoreFile', 'bulkOperation', 'deleteFile', 'removeExclusion', 'activityLogUpdate', 'ticker', 'loadIssues', 'updateIssueStatus', 'deleteIssue', 'updateAllIssues', 'reverseLookup', 'unlockOutIP', 'loadBlockRanges', 'unblockRange', 'blockIPUARange', 'whois', 'unblockIP', 'blockIP', 'permBlockIP', 'loadStaticPanel', 'saveConfig', 'downloadHtaccess', 'checkFalconHtaccess', 'updateConfig', 'saveCacheConfig', 'removeFromCache', 'autoUpdateChoice', 'saveCacheOptions', 'clearPageCache', 'getCacheStats', 'clearAllBlocked', 'killScan', 'saveCountryBlocking', 'saveScanSchedule', 'tourClosed', 'startTourAgain', 'downgradeLicense', 'addTwoFactor', 'twoFacActivate', 'twoFacDel', 'loadTwoFactor', 'loadAvgSitePerf', 'sendTestEmail', 'addCacheExclusion', 'removeCacheExclusion', 'loadCacheExclusions') as $func){
+		foreach(array('activate', 'scan', 'updateAlertEmail', 'sendActivityLog', 'restoreFile', 'exportSettings', 'importSettings', 'bulkOperation', 'deleteFile', 'removeExclusion', 'activityLogUpdate', 'ticker', 'loadIssues', 'updateIssueStatus', 'deleteIssue', 'updateAllIssues', 'reverseLookup', 'unlockOutIP', 'loadBlockRanges', 'unblockRange', 'blockIPUARange', 'whois', 'unblockIP', 'blockIP', 'permBlockIP', 'loadStaticPanel', 'saveConfig', 'downloadHtaccess', 'checkFalconHtaccess', 'updateConfig', 'saveCacheConfig', 'removeFromCache', 'autoUpdateChoice', 'saveCacheOptions', 'clearPageCache', 'getCacheStats', 'clearAllBlocked', 'killScan', 'saveCountryBlocking', 'saveScanSchedule', 'tourClosed', 'startTourAgain', 'downgradeLicense', 'addTwoFactor', 'twoFacActivate', 'twoFacDel', 'loadTwoFactor', 'loadAvgSitePerf', 'sendTestEmail', 'addCacheExclusion', 'removeCacheExclusion', 'loadCacheExclusions') as $func){
 			add_action('wp_ajax_wordfence_' . $func, 'wordfence::ajaxReceiver');
 		}
 
@@ -2584,7 +2649,6 @@ EOL;
 	public static function menu_whois(){
 		require 'menu_whois.php';
 	}
-
 	public static function menu_rangeBlocking(){
 		require 'menu_rangeBlocking.php';
 	}
@@ -2836,6 +2900,25 @@ EOL;
 	//PUBLIC API
 	public static function doNotCache(){ //Call this to prevent Wordfence from caching the current page. 
 		wfCache::doNotCache();
+		return true;
+	}
+	public static function whitelistIP($IP){ //IP as a string in dotted quad notation e.g. '10.11.12.13'
+		$IP = trim($IP);
+		if(! preg_match('/^[\[\]\-\d]+\.[\[\]\-\d]+\.[\[\]\-\d]+\.[\[\]\-\d]+$/', $IP)){
+			throw new Exception("The IP you provided must be in dotted quad notation or use ranges with square brackets. e.g. 10.11.12.13 or 10.11.12.[1-50]");
+		}
+		$whites = wfConfig::get('whitelisted', '');
+		$arr = explode(',', $whites);
+		$arr2 = array();
+		foreach($arr as $e){
+			if($e == $IP){
+				return false;
+			}
+			$arr2[] = trim($e);
+		}
+		$arr2[] = $IP;
+		wfConfig::set('whitelisted', implode(',', $arr2));
+		return true;
 	}
 }
 ?>

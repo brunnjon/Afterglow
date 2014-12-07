@@ -434,6 +434,21 @@ class wfConfig {
 			self::set('other_scanOutside', 0);
 		}
 	}
+	public static function getExportableOptionsKeys(){
+		$ret = array();
+		foreach(self::$securityLevels[2]['checkboxes'] as $key => $val){
+			$ret[] = $key;
+		}
+		foreach(self::$securityLevels[2]['otherParams'] as $key => $val){
+			if($key != 'apiKey'){
+				$ret[] = $key;
+			}
+		}
+		foreach(array('cbl_action', 'cbl_countries', 'cbl_redirURL', 'cbl_loggedInBlocked', 'cbl_loginFormBlocked', 'cbl_restOfSiteBlocked', 'cbl_bypassRedirURL', 'cbl_bypassRedirDest', 'cbl_bypassViewURL') as $key){
+			$ret[] = $key;
+		}
+		return $ret;
+	}
 	public static function parseOptions(){
 		$ret = array();
 		foreach(self::$securityLevels[2]['checkboxes'] as $key => $val){ //value is not used. We just need the keys for validation

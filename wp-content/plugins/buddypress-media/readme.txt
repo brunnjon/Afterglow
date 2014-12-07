@@ -5,8 +5,8 @@ Tags: BuddyPress, media, multimedia, album, audio, songs, music, video, photo, i
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Requires at least: WordPress 3.6
-Tested up to: WordPress 4.0 + BuddyPress 2.0
-Stable tag: 3.7.14
+Tested up to: WordPress 4.0 + BuddyPress 2.1.1
+Stable tag: 3.7.24
 
 Add albums, photo, audio/video encoding, privacy, sharing, front-end uploads & more. All this works mobile/tablets devices.
 
@@ -132,6 +132,49 @@ http://www.youtube.com/watch?v=dJrykKQGDcs
 == Changelog ==
 
 Please visit [rtMedia's Roadmap page](http://rtcamp.com/rtmedia/roadmap/?utm_source=readme&utm_medium=plugin&utm_campaign=buddypress-media "Visit rtMedia's Features page") to get some details about future releases.
+
+= 3.7.24 =
+* Bug fix for encoding service
+
+= 3.7.23 =
+* Fix group featured media
+* Fix database warning on first time install
+
+= 3.7.22 =
+* Validate media before inserting
+
+= 3.7.21 =
+* Fixed group featured media
+
+= 3.7.20 =
+* Featured media option for group
+* Track length for audio/video in media gallery
+* Italian and Portuguese translation update
+* Fix for JSON API
+* Other bug fixes
+
+= 3.7.19 =
+* Security fix for template include
+
+= 3.7.18 =
+* Fix for template include for relative paths
+
+= 3.7.17 =
+* Removed unwanted database call on BuddyPress single activity page
+
+= 3.7.16 =
+* Fix scalar value warning
+
+= 3.7.15 =
+* Fix like button when comments are disabled
+* Fix max regenerate video thumb admin setting
+* masonry layout fixes
+* Fix drag n drop in activity page when attachment for activity is disabled
+* Added missing og:image property in single rtMedia BuddyPress activity
+* Fix likes translated in SQL query
+* Fix activity photo after media edit
+* Added JS alert when uploading is in progress
+* Added membership add-on information
 
 = 3.7.14 =
 * Fix media tab link shown to non members user of a private group
@@ -829,8 +872,8 @@ Please visit [rtMedia's Roadmap page](http://rtcamp.com/rtmedia/roadmap/?utm_sou
 
 == Upgrade Notice ==
 
-= 3.7.14 =
-Requires BuddyPress 1.7 or higher, if using BuddyPress. Fix media tab link shown to non members user of a private group and translation update.
+= 3.7.24 =
+Requires BuddyPress 1.7 or higher, if using BuddyPress. Bug fix for encoding service
 
 == Sponsors ==
 
